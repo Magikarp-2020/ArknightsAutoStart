@@ -1,21 +1,29 @@
 import time
+import os
 import random
 import subprocess
 import logging
 import cv2
 
-SCREENSHOT_PATH = 'buffer/_screenshot.png'
+# 获取脚本所在目录
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# 生成路径方法
+def generate_path(*args):
+    return os.path.join(BASE_DIR, *args)
+
+SCREENSHOT_PATH = generate_path('buffer/_screenshot.png')
 
 # 地图开始任务
-MAP_START_BUTTON_PATH = 'resources/map_start.png'
+MAP_START_BUTTON_PATH = generate_path('resources/map_start.png')
 READED_MAP_START_BUTTON = cv2.imread(MAP_START_BUTTON_PATH)
 
 # 队伍开始任务
-TEAM_START_BUTTON_PATH = 'resources/team_start.png'
+TEAM_START_BUTTON_PATH = generate_path('resources/team_start.png')
 READED_TEAM_START_BUTTON = cv2.imread(TEAM_START_BUTTON_PATH)
 
 # 任务成功
-MISSING_RESULTS_BUTTON_PATH = 'resources/missing_results.png'
+MISSING_RESULTS_BUTTON_PATH = generate_path('resources/missing_results.png')
 READED_MISSING_RESULTS_BUTTON = cv2.imread(MISSING_RESULTS_BUTTON_PATH)
 
 
