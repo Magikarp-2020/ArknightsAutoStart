@@ -26,6 +26,10 @@ def get_phone_screenshot():
     binary_screenshot = process.stdout.read()
     logging.info('手机屏幕获取完成')
 
+    if (len(binary_screenshot) < 1000):
+        logging.error('获取手机屏幕失败')
+        raise Exception('获取手机屏幕失败，请检查 adb 连接')
+
     logging.info('开始存储手机屏幕')
     f = open(SCREENSHOT_PATH, 'wb')
     f.write(binary_screenshot)
