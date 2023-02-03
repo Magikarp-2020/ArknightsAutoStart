@@ -9,22 +9,44 @@ import cv2
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # 生成路径方法
+
+
 def generate_path(*args):
     return os.path.join(BASE_DIR, *args)
+
 
 SCREENSHOT_PATH = generate_path('buffer/_screenshot.png')
 
 # 地图开始任务
-MAP_START_BUTTON_PATH = generate_path('resources/map_start.png')
-READED_MAP_START_BUTTON = cv2.imread(MAP_START_BUTTON_PATH)
+MAP_START_PATH = generate_path('resources/map_start.png')
+READED_MAP_START = cv2.imread(MAP_START_PATH)
 
 # 队伍开始任务
-TEAM_START_BUTTON_PATH = generate_path('resources/team_start.png')
-READED_TEAM_START_BUTTON = cv2.imread(TEAM_START_BUTTON_PATH)
+TEAM_START_PATH = generate_path('resources/team_start.png')
+READED_TEAM_START = cv2.imread(TEAM_START_PATH)
 
 # 任务成功
-MISSING_RESULTS_BUTTON_PATH = generate_path('resources/missing_results.png')
-READED_MISSING_RESULTS_BUTTON = cv2.imread(MISSING_RESULTS_BUTTON_PATH)
+MISSING_RESULTS_PATH = generate_path('resources/missing_results.png')
+READED_MISSING_RESULTS = cv2.imread(MISSING_RESULTS_PATH)
+
+# 补充理智
+REPLENISH_PATH = generate_path('resources/replenish.png')
+READED_REPLENISH = cv2.imread(REPLENISH_PATH)
+
+# 石头
+STONE_PATH = generate_path('resources/stone.png')
+READED_STONE = cv2.imread(STONE_PATH)
+
+# 确定
+CONFIRM_PATH = generate_path('resources/confirm.png')
+READED_CONFIRM = cv2.imread(CONFIRM_PATH)
+
+# 取消
+CANCEL_PATH = generate_path('resources/cancel.png')
+READED_CANCEL = cv2.imread(CANCEL_PATH)
+
+globalRunTimes = 0
+globalReplenishTimes = 0
 
 
 def get_phone_screenshot():
@@ -55,7 +77,7 @@ def find_button(target, template, debugger=False):
     endY = startY + template.shape[0]
     # 输出 min_val
     logging.info('min_val: %s, max_val: %s', min_val, max_val)
-    if (max_val < 0.99):
+    if (max_val < 0.94):
         logging.warn('未找到对应按钮')
         return None
 
@@ -81,7 +103,7 @@ def find_and_click_button(template, key, outerClickX=0, outerClickY=0, clickDela
 
     startButtonResult = find_button(cv2.imread(SCREENSHOT_PATH), template)
 
-    logging.info('寻找开始行动按钮结束，结果为: %s', startButtonResult)
+    logging.info('开始寻找按钮 [%s]，结果为: %s', key, startButtonResult)
 
     if (startButtonResult):
         logging.info('开始点击 %s', key)
@@ -111,11 +133,70 @@ def find_and_click_button(template, key, outerClickX=0, outerClickY=0, clickDela
 
 
 def click_map_start():
-    return find_and_click_button(READED_MAP_START_BUTTON, 'READED_MAP_START_BUTTON')
+    return find_and_click_button(READED_MAP_START, 'READED_MAP_START_BUTTON')
 
 
 def click_team_start():
-    return find_and_click_button(READED_TEAM_START_BUTTON, 'READED_TEAM_START_BUTTON')
+    return find_and_click_button(READED_TEAM_START, 'READED_TEAM_START_BUTTON')
+
+
+def click_replenish():
+    return find_and_click_button(READED_REPLENISH, 'READED_REPLENISH')
+
+
+def click_confirm():
+    return find_and_click_button(READED_CONFIRM, 'READED_CONFIRM')
+
+
+def click_cancel():
+    return find_and_click_button(READED_CANCEL, 'READED_CANCEL')
+
+
+def start_replenish(maxReplenishTimes=0, useStone=False):
+    readedScreenshot = cv2.imread(SCREENSHOT_PATH)
+    replenishResult = find_button(readedScreenshot, READED_REPLENISH)
+    global globalReplenishTimes
+
+    if (replenishResult):
+        canReplenish = globalReplenishTimes <= maxReplenishTimes
+
+        logging.info('进入理智补充判断，当前已补充次数: %s，最大补充次数：%s，当前能否补充：%s',
+                     globalReplenishTimes, maxReplenishTimes, canReplenish)
+
+        # 判断是否达到最大次数
+        if (canReplenish):
+            logging.info('开始补充理智')
+            if (find_button(readedScreenshot, READED_STONE) and not useStone):
+                logging.info('当前使用石头补充，但未开启石头补充选项，关闭理智补充页面')
+                return False
+
+            # 点击确定
+            replenishStatus = do_wait_finish(click_confirm, 10, 1, 3)
+
+            if (replenishStatus):
+                logging.info('补充理智成功，关闭理智补充页面')
+                globalReplenishTimes += 1
+                # 确定是否在理智补充页面
+                if (find_button(cv2.imread(SCREENSHOT_PATH), READED_REPLENISH)):
+                    # 点击取消
+                    if (do_wait_finish(click_cancel, 10, 1, 3)):
+                        logging.info('关闭理智补充页面成功')
+                        return True
+                    else:
+                        logging.info('关闭理智补充页面失败')
+                        return False
+                else:
+                    logging.warn('未知错误，当前已离开理智补充页面，当做正常逻辑处理')
+                    return True
+            else:
+                logging.info('未知错误，点击确定补充理智失败')
+                return False
+        else:
+            logging.info('已达到最大补充次数，不再补充理智')
+            return False
+    else:
+        logging.info('未找到理智补充按钮')
+        return False
 
 
 def click_missing_result():
@@ -123,7 +204,7 @@ def click_missing_result():
     x = random.randint(200, 1080)
     y = random.randint(200, 500)
 
-    return find_and_click_button(READED_MISSING_RESULTS_BUTTON, 'READED_TEAM_START_BUTTON', x, y, random.randint(3, 10))
+    return find_and_click_button(READED_MISSING_RESULTS, 'READED_TEAM_START_BUTTON', x, y, random.randint(3, 10))
 
 
 def do_wait_finish(startFunc, totalTime: int, min: int, max: int):
@@ -148,24 +229,33 @@ def do_wait_finish(startFunc, totalTime: int, min: int, max: int):
     return isSuccess
 
 
-globalRunTime = 0
+def main(**params):
+    # 补充理智次数
+    maxReplenishTimes = params.pop('maxReplenishTimes', 0)
+    # 是否使用石头
+    useStone = params.pop('useStone', False)
+    global globalRunTimes
 
-
-def main():
     logging.info('start click map start')
     mapStartStatus = click_map_start()
 
     if (not mapStartStatus):
+        logging.info('当前非地图页面，结束程序')
         return None
-
-    logging.info('start click team start')
 
     timeStartStatus = do_wait_finish(click_team_start, 10, 1, 3)
 
     logging.info('timeStartStatus: %s', timeStartStatus)
 
     if (not timeStartStatus):
-        return None
+        logging.info('开始补充理智判断')
+        # 是否为补充理智页面
+        if (start_replenish(maxReplenishTimes, useStone)):
+            main(params)
+            return None
+        else:
+            logging.info('当前非补充理智页面，结束程序')
+            return None
 
     logging.info('wait complete and click missing results')
 
@@ -178,9 +268,9 @@ def main():
         return None
 
     nextSleepTime = random.randint(10, 15)
-    globalRunTime += 1
+    globalRunTimes += 1
 
-    logging.info('globalRunTime %s', globalRunTime)
+    logging.info('globalRunTimes %s', globalRunTimes)
 
     logging.info(
         'checkMissingResultStatus!! continue, nextSleepTime: %s', nextSleepTime)
@@ -199,4 +289,8 @@ logging.basicConfig(
     format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
     datefmt='%a, %d %b %Y %H:%M:%S',
 )
-main()
+main(maxReplenishTimes=0, useStone=False)
+
+# get_phone_screenshot()
+
+# find_button(cv2.imread('./buffer/_screenshot.png'), READED_REPLENISH, True)
