@@ -158,7 +158,7 @@ def start_replenish(maxReplenishTimes=0, useStone=False):
     global globalReplenishTimes
 
     if (replenishResult):
-        canReplenish = globalReplenishTimes <= maxReplenishTimes
+        canReplenish = globalReplenishTimes < maxReplenishTimes
 
         logging.info('进入理智补充判断，当前已补充次数: %s，最大补充次数：%s，当前能否补充：%s',
                      globalReplenishTimes, maxReplenishTimes, canReplenish)
@@ -189,8 +189,8 @@ def start_replenish(maxReplenishTimes=0, useStone=False):
                     logging.warn('未知错误，当前已离开理智补充页面，当做正常逻辑处理')
                     return True
             else:
-                logging.info('未知错误，点击确定补充理智失败')
-                return False
+                logging.info('未知错误，点击确定补充理智失败，当做正常逻辑处理')
+                return True
         else:
             logging.info('已达到最大补充次数，不再补充理智')
             return False
