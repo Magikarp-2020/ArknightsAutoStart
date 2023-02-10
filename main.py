@@ -21,6 +21,10 @@ SCREENSHOT_PATH = generate_path('buffer/_screenshot.png')
 MAP_START_PATH = generate_path('resources/map_start.png')
 READED_MAP_START = cv2.imread(MAP_START_PATH)
 
+# 地图开始任务
+MAP_START_2_PATH = generate_path('resources/map_start_2.png')
+READED_MAP_2_START = cv2.imread(MAP_START_2_PATH)
+
 # 队伍开始任务
 TEAM_START_PATH = generate_path('resources/team_start.png')
 READED_TEAM_START = cv2.imread(TEAM_START_PATH)
@@ -133,7 +137,7 @@ def find_and_click_button(template, key, outerClickX=0, outerClickY=0, clickDela
 
 
 def click_map_start():
-    return find_and_click_button(READED_MAP_START, 'READED_MAP_START_BUTTON')
+    return find_and_click_button(READED_MAP_START, 'READED_MAP_START_BUTTON') or find_and_click_button(READED_MAP_2_START, 'READED_MAP_2_START_BUTTON')
 
 
 def click_team_start():
@@ -184,7 +188,7 @@ def start_replenish(maxReplenishTimes=0, useStone=False):
                         return True
                     else:
                         logging.info('关闭理智补充页面失败')
-                        return False
+                        return True
                 else:
                     logging.warn('未知错误，当前已离开理智补充页面，当做正常逻辑处理')
                     return True
@@ -231,9 +235,9 @@ def do_wait_finish(startFunc, totalTime: int, min: int, max: int):
 
 def main(**params):
     # 补充理智次数
-    maxReplenishTimes = params.pop('maxReplenishTimes', 0)
+    maxReplenishTimes = params.get('maxReplenishTimes', 0)
     # 是否使用石头
-    useStone = params.pop('useStone', False)
+    useStone = params.get('useStone', False)
     global globalRunTimes
 
     logging.info('start click map start')
@@ -248,10 +252,10 @@ def main(**params):
     logging.info('timeStartStatus: %s', timeStartStatus)
 
     if (not timeStartStatus):
-        logging.info('开始补充理智判断')
+        logging.info('开始补充理智判断 %s', maxReplenishTimes)
         # 是否为补充理智页面
         if (start_replenish(maxReplenishTimes, useStone)):
-            main(params)
+            main(**params)
             return None
         else:
             logging.info('当前非补充理智页面，结束程序')
@@ -278,7 +282,7 @@ def main(**params):
     # 任务完成会有动画，等待 10-15 秒
     time.sleep(nextSleepTime)
 
-    main()
+    main(**params)
 
 
 print('start')
